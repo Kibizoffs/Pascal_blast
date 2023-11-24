@@ -1,0 +1,7 @@
+*.swp
+*.ppu
+*.o
+*.exe
+
+/.vscode/
+blast
