@@ -11,21 +11,26 @@ const
 
 var
     ini:                      TIniFile;
-    fasta_name, dna_rna_name: string;
+    amino_path, nucl_path: string;
 
 begin
     ClrScr();
     NormVideo();
 
     debug := false;
+    finish := false;
     ini := TIniFile.Create('config.ini');
     if ini.ReadString('settings', 'debug', '0') = '1' then
     begin
         debug := true;
         WriteLn(ParamStr(0), ' был запущен...')
     end;
+    if ini.ReadString('settings', 'finish', '0') = '1' then
+    begin
+        finish := true
+    end;
 
-    if ParamCount <> 4 then
+    if ParamCount > 3 then
         WriteErr(MSG_BAD_PARAMS);
 
     { ParamStr(0) равен названию исполняемого файла }
@@ -41,5 +46,6 @@ begin
     end;
     if (code <> 0) or (flag = false) then
         WriteErr(MSG_BAD_MODE);
-    Parser(fasta_name, dna_rna_name) { процедура из parser.pas }
+        
+    Parse_input(amino_path, nucl_path) { процедура из parser.pas } 
 end.

@@ -2,7 +2,7 @@ unit Global;
 
 interface
 var
-    debug, flag: boolean;
+    debug, finish, flag: boolean;
     mode, code: byte;
     i: integer;
 
