@@ -4,7 +4,7 @@ interface
 var
     debug, finish, flag: boolean;
     mode, code: byte;
-    i: integer;
+    i, j: integer;
 
 implementation
 

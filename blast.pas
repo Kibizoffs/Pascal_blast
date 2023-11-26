@@ -31,11 +31,11 @@ begin
     end;
 
     if ParamCount > 3 then
-        WriteErr(MSG_BAD_PARAMS);
+        WriteErr(MSG_BAD_PARAMS, '');
 
     { ParamStr(0) равен названию исполняемого файла }
-    fasta_name := ParamStr(1);
-    dna_rna_name := ParamStr(2);
+    amino_path := ParamStr(1);
+    nucl_path := ParamStr(2);
     Val(ParamStr(3), mode, code);
     flag := false;
     for i := 1 to Length(modes) do
@@ -45,7 +45,7 @@ begin
         break
     end;
     if (code <> 0) or (flag = false) then
-        WriteErr(MSG_BAD_MODE);
+        WriteErr(MSG_BAD_MODE, '');
         
     Parse_input(amino_path, nucl_path) { процедура из parser.pas } 
 end.
