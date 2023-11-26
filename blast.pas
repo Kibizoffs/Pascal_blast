@@ -10,7 +10,7 @@ const
     modes: array[1..2] of Byte = (1, 3);
 
 var
-    ini:                      TIniFile;
+    ini:                   TIniFile;
     amino_path, nucl_path: string;
 
 begin

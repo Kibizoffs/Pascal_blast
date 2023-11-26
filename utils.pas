@@ -1,25 +1,23 @@
 unit Utils;
 
 interface
-    uses
-        Parser;  { обработка ошибок }
 
-    procedure Prepare_file(file_path: string; var input: Text);
+    procedure Prepare_file(var input: Text; const file_path: string);
 
-    procedure Parse_EOLN(var input: text; var seq_item: seq_item_r);
+    procedure Parse_EOLN(var input: text);
 
-    function Escaped_whitespace(var seq_item: seq_item_r): boolean;
+    function In_string(const ch: char; const str: string): boolean;
 
-    function In_string(var seq_item: seq_item_r; const str: string): boolean;
+    function Escaped_whitespace(): boolean;
 
 
 implementation
     uses
         SysUtils, { стандартные модули }
-        Global,   { глобальные переменные }
+        Global, { глобальные переменные }
         Handler;  { обработка ошибок }
 
-    procedure Prepare_file(file_path: string; var input: Text);
+    procedure Prepare_file(var input: Text; const file_path: string);
     begin
         if not(FileExists(file_path)) then
             WriteErr(MSG_NO_FILE, file_path);
@@ -27,21 +25,21 @@ implementation
         Reset(input);
     end;
 
-    procedure Parse_EOLN(var input: text; var seq_item: seq_item_r);
+    procedure Parse_EOLN(var input: text);
     begin
         while EOLN(input) do
         begin
             ReadLn(input);
-            seq_item.col := seq_item.col + 1;
+            seq_item.row := seq_item.row + 1;
         end;
     end;
 
-    function In_string(var seq_item: seq_item_r; const str: string): boolean;
+    function In_string(const ch: char; const str: string): boolean;
     begin
         In_string := false;
         for i := 1 to Length(str) do
         begin
-            if seq_item.ch = str[i] then
+            if ch = str[i] then
             begin
                 In_string := true;
                 break
@@ -49,9 +47,9 @@ implementation
         end;
     end;
 
-    function Escaped_whitespace(var seq_item: seq_item_r): boolean;
+    function Escaped_whitespace(): boolean;
     const
-        WhiteSpaces: array[1..4] of char = (#9, #10, #13, #32);
+        WhiteSpaces: array[1..4] of char = (#0, #9, #13, #32);
     begin
         Escaped_whitespace := false;
         for i := 1 to High(WhiteSpaces) do
@@ -64,5 +62,4 @@ implementation
             end;
         end;
     end;
-
 end.

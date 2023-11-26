@@ -9,8 +9,8 @@ interface
         MSG_BAD_FASTA_FORMAT       = 'ERR4: Плохой формат FASTA файла';
         MSG_BAD_TYPE               = 'ERR5: Плохой тип последовательности';
         MSG_UNEXPECTED_END_OF_FILE = 'ERR6: Неожиданный конец файла';
-        MSG_BAD_CHAR               = 'ERR7: Плохой символ';
-
+        MSG_BAD_AMINO_SEQ          = 'ERR7: Плохая аминокислотная последовательность';
+        MSG_BAD_NUCL_SEQ           = 'ERR8: Плохая нуклеотидная последовательность';
 
     procedure WriteErr(main_msg: string; add_msg: string);
 

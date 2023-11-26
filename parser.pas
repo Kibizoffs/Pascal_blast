@@ -1,132 +1,111 @@
 unit Parser;
 
 interface
-    type    
-        seq_item_r = record
-            ch:  char;
-            ord: longword;
-            row: longword;
-            col: longword;
-        end;
-        seq_r = record
-            form: (AMINO, DNA, RNA, UNKNOWN);
-            name: string;
-            sequ: array of seq_item_r;
-            size: longword;
-        end;
-
-    procedure Prepare_file(file_path: string; var input: text);
 
     procedure Parse_input(amino_path: string; nucl_path: string);
 
 implementation
     uses
+        SysUtils,
         Global,   { глобальные переменные }
         Handler,  { обработка ошибок }
         Utils;    { дополнительное }
 
     var
-        ch, amino_ch:            char;
         amino_input, nucl_input: text;
         codon_str:               string[3];
-        amino_target:            sequence_r;
 
-    function Seq_name(var input: Text): string;
+    function Seq_name(var input: Text): string; { получить имя последовательности }
     const
         SEQ_NAME_PUNCTUATION: string = '!''"(),-.:;[]_{}';
     begin
-        Seq_Name := '';
+        Seq_name := '';
         
-        while True do
+        if EOF(input) then
+            WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
+        seq_item.ch := #0;
+        while (seq_item.ch = #10) or Escaped_whitespace() do
         begin
-            if EOF(input) then break;
-            while EOLN(nucl_input) do ReadLn(nucl_input);
-            Read(input, ch); { считывание название последовательности }
-            if ch = '>' then
-                while true do
-                begin
-                    if EOF(input) then 
-                        WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
-                    Read(input, ch);
-                    if ch = ' ' then break;
-                    if not(
-                        ('A' < UpCase(ch)) and (UpCase(ch) < 'Z') or
-                        ('0' < ch) and (ch < '9') or
-                        In_string(ch, SEQ_NAME_PUNCTUATION)
-                        ) then 
-                        WriteErr(MSG_BAD_FASTA_SEQ_NAME, '');
-                    Seq_Name := Seq_Name + ch
-                end
-            else
+            if seq_item.ch = #10 then
             begin
-                if finish and (UpCase(ch) = 'Ё') then Halt(1);
-                WriteErr(MSG_BAD_FASTA_FORMAT, '');
-            end;
+                ReadLn(input);
+                seq_item.col := seq_item.col + 1;
+            end
+            else if Escaped_whitespace() then
+                Read(input, seq_item.ch)
         end;
-    end;
 
-    function Seq_form(var input: Text): sequence_r;
-    var
-        form_str: string = '';
-    begin
-        while not EOLN(input) do { считывание типа последовательности }
+        if seq_item.ch = '>' then
+            while true do
+            begin
+                if EOF(input) then 
+                    WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
+                Read(input, seq_item.ch);
+                if seq_item.ch = #10 then
+                begin
+                    seq_item.col := seq_item.col + 1;
+                    break;
+                end
+                else if not(
+                    ('A' < UpCase(seq_item.ch)) and (UpCase(seq_item.ch) < 'Z') or
+                    ('0' < seq_item.ch) and (seq_item.ch < '9') or
+                    In_string(seq_item.ch, SEQ_NAME_PUNCTUATION)
+                ) then
+                    WriteErr(MSG_BAD_FASTA_SEQ_NAME, '');
+                Seq_Name := Seq_name + seq_item.ch;
+            end
+        else
         begin
-            if EOF(input) then 
-                WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
-            Read(input, ch);
-            if finish and (UpCase(ch) = 'Ё') then Halt(1);
-            form_str := form_str + UpCase(ch);
-            if Length(form_str) > 5 then break { наибольшая длина = 5 у 'AMINO' }
+            if finish and (UpCase(seq_item.ch) = 'Ё') then Halt(1);
+            WriteErr(MSG_BAD_FASTA_FORMAT, '');
         end;
-        case form_str of
-            'AMINO': Seq_Form.form := AMINO; { останов }
-            'DNA':   Seq_Form.form := DNA;
-            'RNA':   Seq_Form.form := RNA;
-            else     Seq_Form.form := UNKNOWN; { останов }
-        end;
-        if (Seq_Form.form = AMINO) or (Seq_Form.form = UNKNOWN) then
-            WriteErr(MSG_BAD_TYPE, '');
     end;
 
-    procedure Read_amino_seq(var input: Text);
+    function Amino_seq(): seq_r; { прочитать аминокислотная последовательность }
     const 
-        SEQ_AMINO_CHARS = 'ACDEFGHIKLMNPQRSTVWY';
+        SEQ_AMIGO_LEGAL_CHARS = 'ACDEFGHIKLMNPQRSTVWY';
+    var
+        amino_seq_item: seq_item_r;
     begin
+        Amino_seq.form := AMINO;
+        Amino_seq.name := Seq_name(amino_input);
+        seq_item.col := 1; { для названий amino и nucl используется Seq_name, и важно обнулить координаты }
+        Amino_seq.size := 0;
+        amino_seq_item.ch := #0;
         while true do
         begin
-            while EOLN(input) do ReadLn(input);
-            if EOF then
+            Read(input, amino_seq_item.ch);
+            while amino_seq_item.ch = #10 do ReadLn(amino_input);
+            if EOF(input) then
             begin
-                if amino_target.size = 0 then
-                    WriteErr(MSG_UNEXPECTED_END_OF_FILE)
-                else
-                    break
+                if Amino_seq.size = 0 then
+                    WriteErr(MSG_UNEXPECTED_END_OF_FILE, '')
+                else break
             end;
-            Read(ch, input);
-            if not(In_string(ch, SEQ_AMINO_CHARS)) and
-            not(Escaped_whitespace) then
-                WriteErr(MSG_BAD_AMINO_SEQ);
-            if Length(amino_target.seq) = amino_target.size then
-                amino_target.size := amino_target.size + 1024
-            SetLength(amino_target.seq, amino_target.size);
-            amino_target.seq := amino_target.seq + ch;
+            if not(
+                In_string(amino_seq_item.ch, SEQ_AMIGO_LEGAL_CHARS) or
+                Escaped_whitespace()
+            ) then
+                WriteErr(MSG_BAD_AMINO_SEQ, '');
+            
+            Amino_seq.size := Amino_seq.size + 1;
+            SetLength(Amino_seq.seq, Amino_seq.size);
+            Amino_seq.seq[Amino_seq.size] := amino_seq_item;
         end;
     end;
 
-    procedure Searcher(form: seq_item.form; var input: text);
+    procedure Searcher(var input: text; form: seq_r_form);
     const
         SEQ_NUCL_CHARS: string = 'ACGTU';
     var
-        amino_seq: seq_r;
         nucl_seq: seq_r;
-        seq_item: seq_item_r;
+        amino_ch: char;
     begin
-        amino_seq.name 
-        seq_item.item := #0;
-        seq_item.row := 1;
+        seq_item.ch := #0;
         seq_item.col := 1;
+        seq_item.row := 1;
 
-        Parse_EOLN(input, seq_item.row);
+        Parse_EOLN(input);
         case codon_str of
             'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
             'UGU', 'UGC':                             amino_ch := 'C';
@@ -148,21 +127,17 @@ implementation
             'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
             'UGG':                                    amino_ch := 'W';
             'UAU', 'UAC':                             amino_ch := 'Y';
+        end;
     end;
 
     procedure Parse_input(amino_path: string; nucl_path: string); { обработка входных данных }
     begin
-        Prepare_file(amino_path, amino_input);
-        amino_target.form := AMINO;
-        amino_target.name := Seq_name(amino_input);
-        amino_target.seq := Read_amino_seq(amino_input);
-        if debug then writeln('D99: ', amino_target.seq);
+        Prepare_file(amino_input, amino_path);
+        Amino_seq();
         Close(amino_input);
 
-        Prepare_file(nucl_path, nucl_input);
-        sequence_item.form := Seq_form(nucl_input);
-        sequence_item.name := Seq_name(nucl_input);
+        Prepare_file(nucl_input, nucl_path);
+        Searcher();
         Close(nucl_input);
     end;
-
 end.
