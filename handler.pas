@@ -22,7 +22,7 @@ implementation
     begin   
         TextColor(red);
         WriteLn(main_msg, add_msg);
-        Halt(1)
+        Halt(1);
     end;
 
 end.

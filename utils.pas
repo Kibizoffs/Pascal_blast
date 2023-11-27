@@ -1,21 +1,23 @@
 unit Utils;
 
 interface
-
     procedure Prepare_file(var input: Text; const file_path: string);
 
-    procedure Parse_EOLN(var input: text);
+    function In_string(const str: string): boolean;
 
-    function In_string(const ch: char; const str: string): boolean;
+    function If_EOLN(): boolean;
 
-    function Escaped_whitespace(): boolean;
+    function If_whitespace(): boolean;
+
+    procedure Parse_EOLN(var input: text; const form: seq_r_form);
 
 
 implementation
     uses
         SysUtils, { стандартные модули }
-        Global, { глобальные переменные }
-        Handler;  { обработка ошибок }
+        Global,   { глобальные переменные }
+        Handler,  { обработка ошибок }
+        Parser;   { обработка ввода и нахождение последовательностей }
 
     procedure Prepare_file(var input: Text; const file_path: string);
     begin
@@ -25,21 +27,12 @@ implementation
         Reset(input);
     end;
 
-    procedure Parse_EOLN(var input: text);
-    begin
-        while EOLN(input) do
-        begin
-            ReadLn(input);
-            seq_item.row := seq_item.row + 1;
-        end;
-    end;
-
-    function In_string(const ch: char; const str: string): boolean;
+    function In_string(const str: string): boolean;
     begin
         In_string := false;
         for i := 1 to Length(str) do
         begin
-            if ch = str[i] then
+            if seq_item.ch = str[i] then
             begin
                 In_string := true;
                 break
@@ -47,19 +40,41 @@ implementation
         end;
     end;
 
-    function Escaped_whitespace(): boolean;
+    function If_EOLN(): boolean;
+    begin
+        If_EOLN := false;
+        if In_string(Chr(10) + Chr(77)) then
+            If_EOLN := true;
+    end;
+
+    function If_whitespace(): boolean;
     const
         WhiteSpaces: array[1..4] of char = (#0, #9, #13, #32);
     begin
-        Escaped_whitespace := false;
+        If_whitespace := false;
         for i := 1 to High(WhiteSpaces) do
         begin
             if seq_item.ch = WhiteSpaces[i] then
             begin
                 seq_item.row := seq_item.row + 1;
-                Escaped_whitespace := true;
+                If_whitespace := true;
                 break
             end;
+        end;
+    end;
+
+    procedure Parse_EOLN_whitespaces(var input: text; const form: seq_r_form);
+    begin
+        while If_EOLN() or If_whitespace() do
+        begin
+            if If_EOLN() then
+            begin
+                ReadLn(input);
+                if (form = DNA) or (form = RNA) then 
+                    seq_item.col := seq_item.col + 1;
+            end
+            else if If_whitespace() then
+                Read(input, seq_item.ch)
         end;
     end;
 end.
