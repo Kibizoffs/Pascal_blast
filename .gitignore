@@ -2,6 +2,7 @@
 *.ppu
 *.o
 *.exe
+*.log
 
 /.vscode/
 blast

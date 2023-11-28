@@ -2,13 +2,17 @@ unit Utils;
 
 interface
     uses
-        SysUtils, { стандартные модули }
-        Debugger, { Модуль разработчика }
-        Global,   { глобальные переменные }
-        Handler,  { обработка ошибок }
-        Parser;   { обработка ввода и нахождение последовательностей }
+        SysUtils, { Стандартное }
+        Debugger, { Разработка }
+        Global,   { Глобальное }
+        Handler,  { Обработка ошибок }
+        Parser;   { Обработка ввода и нахождение последовательностей }
 
-    procedure Prepare_file(var input: Text; const file_path: string);
+    procedure Prepare_output_file(var output: Text; const file_path: string);
+
+    procedure Prepare_input_file(var input: Text; const file_path: string);
+
+    function Current_time(): string;
 
     function In_string(const str: string): boolean;
 
@@ -22,12 +26,25 @@ interface
 
 
 implementation
-    procedure Prepare_file(var input: Text; const file_path: string);
+    procedure Prepare_output_file(var output: Text; const file_path: string);
+    begin
+        if not(FileExists(file_path)) then
+            FileCreate(file_path);
+        Assign(output, file_path);
+        Rewrite(output);
+    end;
+
+    procedure Prepare_input_file(var input: Text; const file_path: string);
     begin
         if not(FileExists(file_path)) then
             WriteErr(MSG_NO_FILE, file_path);
         Assign(input, file_path);
         Reset(input);
+    end;
+
+    function Current_time(): string;
+    begin
+        Current_time := FormatDateTime('hh:nn:ss.zzz', Now);
     end;
 
     function In_string(const str: string): boolean;
