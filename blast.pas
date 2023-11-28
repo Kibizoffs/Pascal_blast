@@ -24,7 +24,7 @@ begin
     if ini.ReadString('settings', 'debug', '0') = '1' then
     begin
         debug_mode := true;
-        WriteLn(ParamStr(0), ' был запущен...')
+        debug(ParamStr(0) + ' был запущен...')
     end;
 
     if ParamCount > 3 then

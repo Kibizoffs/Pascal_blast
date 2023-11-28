@@ -48,9 +48,9 @@ implementation
     procedure Restore_default_seq_item();
     begin
         seq_item.ch := #0;
+        seq_item.ord := 0;
         seq_item.col := 1;
         seq_item.row := 0;
-        seq_item.ord := 0;
     end;
 
     function If_EOLN(): boolean;
@@ -100,7 +100,6 @@ implementation
                     break;
                 end;
             end;
-            break
         end;
     end;
 end.

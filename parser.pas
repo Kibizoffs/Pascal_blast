@@ -34,14 +34,13 @@ implementation
         amino_seq:               seq_r;
         nucl_seqs: array of seq_r;
 
-    function Seq_name(var input: Text; const form: seq_r_form): string; { получить имя последовательности }
+    function Seq_name(var input: Text): string; { получить имя последовательности }
     const
         SEQ_NAME_PUNCTUATION: string = '!''"(),-.:;[]_{}';
     begin
         Seq_name := '';
 
-        Debug('Читаем название аминокислотной последовательности...');
-
+        Debug('Читаем название последовательности...');
         if EOF(input) then WriteErr(MSG_UNEXPECTED_EOF, '');
         Read_parse_char(input);
         if seq_item.ch = '>' then
@@ -65,10 +64,12 @@ implementation
                     WriteErr(MSG_BAD_FASTA_SEQ_NAME, '');
 
                 Seq_name := Seq_name + seq_item.ch;
-                
                 inc(seq_item.row);
             end
         else WriteErr(MSG_BAD_FASTA_FORMAT, '');
+        seq_item.ord := 0; { ord не зависит от названий последовательностей }
+
+        Debug('Название последовательности: ' + Seq_name);
     end;
 
     procedure Read_amino_seq(); { получить аминокислотную последовательность }
@@ -78,15 +79,16 @@ implementation
         i: integer;
     begin
         amino_seq.form := AMINO;
-        amino_seq.name := Seq_name(amino_input, amino_seq.form);
-        Restore_default_seq_item();
+        amino_seq.name := Seq_name(amino_input);
         SetLength(amino_seq.seq, 1);
         i := 0;
-        Debug('Получаем аминокислотную последовательность...');
+
+        Debug('Получаем последовательность...');
         while true do
         begin
-            if EOF(input) then break;
+            if EOF(amino_input) then break;
             Read_parse_char(amino_input);
+            Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.col) + ' ' + IntToStr(seq_item.row));
             if EOF(amino_input) then
             begin
                 if i = 0 then
@@ -110,6 +112,7 @@ implementation
         i, j, k: integer;
         amino_ch: char;
     begin
+        Debug('Начинаем поиск подпоследовательностей...');
         for i := 1 to Length(nucl_seqs) do
         begin
             for j := 1 to Length(nucl_seqs[i].seq) do
@@ -151,25 +154,28 @@ implementation
         SEQ_NUCL_CHARS: string = 'ACGTU';
     var
         nucl_seq: seq_r;
-        i: integer;
+        k: integer;
     begin
         Restore_default_seq_item();
+        Debug('Получаем последовательности...');
 
         SetLength(nucl_seqs, 1);
-        i := 0;
+        k := 0;
         while true do
         begin
             nucl_seq.form := UNKNOWN;
-            nucl_seq.name := Seq_name(nucl_input, UNKNOWN);
+            nucl_seq.name := Seq_name(nucl_input);
 
             while true do
             begin
                 Read_parse_char(nucl_input);
-                if seq_item.ch = '>' then break { дошли до следующей последовательности }
+                Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.col) + ' ' + IntToStr(seq_item.row));
+                if seq_item.ch = '>' then break { дошли до названия следующей последовательности }
                 else if not If_whitespace() then
                 begin
                     if not In_string(SEQ_NUCL_CHARS) then
                         WriteErr(MSG_BAD_NUCL_SEQ, '')
+                    { определение типа последовательности }
                     else if UpCase(seq_item.ch) = 'U' then
                         if nucl_seq.form = DNA then WriteErr(MSG_BAD_TYPE, '')
                         else nucl_seq.form := RNA
@@ -180,28 +186,26 @@ implementation
                         seq_item.ch := 'U'
                 end;
             end;
-            inc(i);
-            if i = Length(nucl_seqs) then
-                SetLength(nucl_seqs, i * 2);
-            nucl_seqs[i] := nucl_seq;
+            inc(k);
+            if k = Length(nucl_seqs) then
+                SetLength(nucl_seqs, k * 2);
+            nucl_seqs[k] := nucl_seq;
+            Debug('Нуклеотидная последовательность #' + IntToStr(k) + ': ')
         end;
         SetLength(nucl_seqs, i);
     end;
 
     procedure Main(amino_path: string; nucl_path: string); { обработка входных данных }
     begin
+        Debug('Подготовка к обработке аминокислотной последовательности...');
         Prepare_file(amino_input, amino_path);
-        Debug('d1');
         Read_amino_seq();
-        Debug('d2');
         Close(amino_input);
 
+        Debug('Подготовка к обработке нуклеотидной последовательности...');
         Prepare_file(nucl_input, nucl_path);
-        Debug('d3');
         Read_nucl_seqs();
-        Debug('d4');
         Search_sub_seqs();
-        Debug('d5');
         Close(nucl_input);
     end;
 end.

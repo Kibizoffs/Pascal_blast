@@ -21,7 +21,7 @@ implementation
     procedure WriteErr(main_msg: string; add_msg: string);
     begin   
         TextColor(red);
-        WriteLn(StdErr, main_msg, add_msg);
+        WriteLn(main_msg, add_msg);
         Halt(1);
     end;
 end.

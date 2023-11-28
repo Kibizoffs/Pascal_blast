@@ -8,33 +8,14 @@ interface
 
 implementation
     uses
-        Crt;   { стандартные модули }
-
-    function Random_string(const n: integer): string;
-    var
-        randomN1, randomN2, i, offset: integer;
-    begin
-        Random_string := '';
-
-        randomize;
-        for i := 1 to n do
-        begin
-            randomN1 := Random(2);
-            randomN2 := Random(26);
-            if randomN1 = 0 then
-                offset := 65
-            else if randomN1 = 1 then
-                offset := 97;
-            Random_string := Random_string + Chr(offset + randomN2);
-        end;
-    end;
+        Crt, SysUtils;   { стандартные модули }
         
     procedure Debug(const msg: string);
     begin
         if debug_mode then
         begin
-            TextColor(Yellow);
-            WriteLn(Random_string(4), ' ', msg);
+            TextColor(Magenta);
+            WriteLn(FormatDateTime('hh:nn:ss.zzz', Now), ' ', msg);
             NormVideo();
         end;
     end;
