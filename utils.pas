@@ -76,13 +76,12 @@ implementation
 
     procedure Read_parse_char(var input: text);
     begin
-        if EOF(input) then WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
         Read(input, seq_item.ch);
-        while EOF(input) do
+        while not EOF(input) do
         begin
             if If_EOLN() then
             begin
-                seq_item.col := seq_item.col + 1;
+                inc(seq_item.col);
                 seq_item.row := 0;
                 ReadLn(input, seq_item.ch);
             end
@@ -90,13 +89,13 @@ implementation
             begin
                 if If_whitespace() then
                 begin
-                    seq_item.row := seq_item.row + 1;
+                    inc(seq_item.row);
                     Read(input, seq_item.ch);
                 end
                 else 
                 begin
-                    seq_item.ord := seq_item.ord + 1;
-                    seq_item.row := seq_item.row + 1;
+                    inc(seq_item.ord);
+                    inc(seq_item.row);
                     break;
                 end;
             end;

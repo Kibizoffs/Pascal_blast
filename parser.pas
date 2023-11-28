@@ -39,16 +39,17 @@ implementation
     begin
         Seq_name := '';
 
+        if EOF(input) then WriteErr(MSG_UNEXPECTED_EOF, '');
         Read_parse_char(input);
         if seq_item.ch = '>' then
             while true do
             begin
-                if EOF(input) then WriteErr(MSG_UNEXPECTED_END_OF_FILE, '');
+                if EOF(input) then WriteErr(MSG_UNEXPECTED_EOF, '');
                 Read(input, seq_item.ch);
 
                 if If_EOLN() then
                 begin
-                    seq_item.col := seq_item.col + 1;
+                    inc(seq_item.col);
                     seq_item.row := 0;
                     break;
                 end
@@ -62,7 +63,7 @@ implementation
 
                 Seq_name := Seq_name + seq_item.ch;
                 
-                seq_item.row := seq_item.row + 1;
+                inc(seq_item.row);
             end
         else WriteErr(MSG_BAD_FASTA_FORMAT, '');
     end;
@@ -81,15 +82,16 @@ implementation
         i := 0;
         while true do
         begin
+            if EOF(input) then break;
             Read_parse_char(amino_input);
             if EOF(amino_input) then
                 if Amino_seq.size = 0 then
-                    WriteErr(MSG_UNEXPECTED_END_OF_FILE, '')
+                    WriteErr(MSG_UNEXPECTED_EOF, '')
                 else break
             else if In_string(SEQ_AMIGO_LEGAL_CHARS) then
             begin
-                i := i + 1;
-                if i > 10 then
+                inc(i);
+                if (i > 10) then
                     WriteErr(MSG_BAD_AMINO_SEQ, '');
                 Amino_seq.seq[i] := seq_item;
             end
@@ -104,47 +106,65 @@ implementation
     var
         nucl_seq: seq_r;
         amino_ch: char;
+        i: integer;
+        nucl_seqs: array of seq_r;
     begin
         Restore_default_seq_item();
 
+        SetLength(nucl_seqs, 1);
+    
         while true do
         begin
             nucl_seq.form := UNKNOWN;
             nucl_seq.name := Seq_name(nucl_input, UNKNOWN);
 
-            Read_parse_char(nucl_input);
-            if not If_whitespace() then
+            while true do
             begin
-                if nucl_seq.form = UNKNOWN then
-                    if UpCase(seq_item.ch) = ''
-                codon_str := codon_str + seq_item.ch;
-                if Length(codon_str) > 3 then
-                    codon_str := Copy(codon_str, 2, 3);
-                if Length(codon_str, 3) then
+                Read_parse_char(nucl_input);
+                if seq_item.ch = '>' then break { дошли до следующей последовательности }
+                else if not If_whitespace() then
                 begin
-                    case codon_str of
-                        'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
-                        'UGU', 'UGC':                             amino_ch := 'C';
-                        'GAU', 'GAC':                             amino_ch := 'D';
-                        'GAA', 'GAG':                             amino_ch := 'E';
-                        'UUU', 'UUC':                             amino_ch := 'F';
-                        'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
-                        'CAU', 'CAC':                             amino_ch := 'H';
-                        'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
-                        'AAA', 'AAG':                             amino_ch := 'K';
-                        'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
-                        'AUG':                                    amino_ch := 'M';
-                        'AAU', 'AAC':                             amino_ch := 'N';
-                        'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
-                        'CAA', 'CAG':                             amino_ch := 'Q';
-                        'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
-                        'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
-                        'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
-                        'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
-                        'UGG':                                    amino_ch := 'W';
-                        'UAU', 'UAC':                             amino_ch := 'Y';
-                    end;
+                    if UpCase(seq_item.ch) = 'U' then
+                        if nucl_seq.form = DNA then WriteErr(MSG_BAD_TYPE, '')
+                        else nucl_seq.form := RNA
+                    else if UpCase(seq_item.ch) = 'T' then
+                        if nucl_seq.form = RNA then WriteErr(MSG_BAD_TYPE, '')
+                        else nucl_seq.form := DNA;
+                    if UpCase(seq_item.ch) = 'T' then
+                        seq_item.ch := 'U'
                 end;
+            end;
+
+
+        end;
+
+        codon_str := codon_str + seq_item.ch;
+        if Length(codon_str) > 3 then
+            codon_str := Copy(codon_str, 2, 3);
+        if Length(codon_str) = 3 then
+        begin
+            case codon_str of
+                'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
+                'UGU', 'UGC':                             amino_ch := 'C';
+                'GAU', 'GAC':                             amino_ch := 'D';
+                'GAA', 'GAG':                             amino_ch := 'E';
+                'UUU', 'UUC':                             amino_ch := 'F';
+                'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
+                'CAU', 'CAC':                             amino_ch := 'H';
+                'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
+                'AAA', 'AAG':                             amino_ch := 'K';
+                'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
+                'AUG':                                    amino_ch := 'M';
+                'AAU', 'AAC':                             amino_ch := 'N';
+                'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
+                'CAA', 'CAG':                             amino_ch := 'Q';
+                'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
+                'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
+                'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
+                'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
+                'UGG':                                    amino_ch := 'W';
+                'UAU', 'UAC':                             amino_ch := 'Y';
+            end;
             end;
         end;
     end;
@@ -154,11 +174,7 @@ implementation
         Prepare_file(amino_input, amino_path);
         if debug then writeln('d1');
         Get_amino_seq();
-        if debug then
-        begin
-            writeln('d2: ', amino_seq.name, ' ');
-            write(amino_seq.seq[5].ch, ' ');
-        end;
+        if debug then writeln('d2');
         Close(amino_input);
 
         Prepare_file(nucl_input, nucl_path);
