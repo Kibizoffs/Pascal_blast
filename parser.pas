@@ -5,8 +5,8 @@ interface
         seq_item_r = record
             ch:  char;
             ord: longword;
-            row: longword;
             col: longword;
+            row: longword;
         end;
         seq_r_form = (AMINO, DNA, RNA, UNKNOWN);
         seq_r = record
@@ -18,7 +18,7 @@ interface
     var
         seq_item: seq_item_r;
 
-    procedure Main(amino_path: string; nucl_path: string);
+    procedure Main();
 
 implementation
     uses
@@ -51,8 +51,8 @@ implementation
 
                 if If_EOLN() then
                 begin
-                    inc(seq_item.col);
-                    seq_item.row := 0;
+                    inc(seq_item.row);
+                    seq_item.col := 0;
                     break;
                 end
                 else if not (
@@ -64,7 +64,7 @@ implementation
                     WriteErr(MSG_BAD_FASTA_SEQ_NAME, '');
 
                 Seq_name := Seq_name + seq_item.ch;
-                inc(seq_item.row);
+                inc(seq_item.col);
             end
         else WriteErr(MSG_BAD_FASTA_FORMAT, '');
         seq_item.ord := 0; { ord не зависит от названий последовательностей }
@@ -81,26 +81,26 @@ implementation
         amino_seq.form := AMINO;
         amino_seq.name := Seq_name(amino_input);
         SetLength(amino_seq.seq, 1);
-        i := 0;
+        i := 1;
 
         Debug('Получаем последовательность...');
         while true do
         begin
             if EOF(amino_input) then break;
             Read_parse_char(amino_input);
-            Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.col) + ' ' + IntToStr(seq_item.row));
+            Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.row) + ' ' + IntToStr(seq_item.col));
             if EOF(amino_input) then
             begin
-                if i = 0 then
+                if i = 1 then
                     WriteErr(MSG_UNEXPECTED_EOF, '')
                 else break
             end
             else if In_string(SEQ_AMIGO_LEGAL_CHARS) then
             begin
-                inc(i);
                 if (i = Length(amino_seq.seq)) then
                     SetLength(amino_seq.seq, i * 2);
                 Amino_seq.seq[i] := seq_item;
+                inc(i);
             end
             else if not (If_EOLN() or If_whitespace()) then
                 WriteErr(MSG_BAD_AMINO_SEQ, '');
@@ -154,48 +154,55 @@ implementation
         SEQ_NUCL_CHARS: string = 'ACGTU';
     var
         nucl_seq: seq_r;
-        k: integer;
+        i: integer;
     begin
         Restore_default_seq_item();
         Debug('Получаем последовательности...');
 
         SetLength(nucl_seqs, 1);
-        k := 0;
+        i := 1;
         while true do
         begin
+            if EOF(nucl_input) then
+            begin
+                if (i = 1) then WriteErr(MSG_UNEXPECTED_EOF, nucl_path)
+                else break;
+            end;
             nucl_seq.form := UNKNOWN;
             nucl_seq.name := Seq_name(nucl_input);
 
+            Debug('Нуклеотидная последовательность #' + IntToStr(i) + ': ' + nucl_seq.name);
             while true do
             begin
                 Read_parse_char(nucl_input);
-                Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.col) + ' ' + IntToStr(seq_item.row));
-                if seq_item.ch = '>' then break { дошли до названия следующей последовательности }
+                Debug(seq_item.ch + ' ' + IntToStr(seq_item.ord) + ' ' + IntToStr(seq_item.row) + ' ' + IntToStr(seq_item.col));
+
+                if EOF(nucl_input) or (seq_item.ch = '>') then break { дошли до названия следующей последовательности }
                 else if not If_whitespace() then
                 begin
+                    seq_item.ch := UpCase(seq_item.ch);
                     if not In_string(SEQ_NUCL_CHARS) then
-                        WriteErr(MSG_BAD_NUCL_SEQ, '')
+                        WriteErr(MSG_BAD_NUCL_SEQ, '');
                     { определение типа последовательности }
-                    else if UpCase(seq_item.ch) = 'U' then
-                        if nucl_seq.form = DNA then WriteErr(MSG_BAD_TYPE, '')
+                    if seq_item.ch = 'U' then
+                        if nucl_seq.form = DNA then WriteErr(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
                         else nucl_seq.form := RNA
-                    else if UpCase(seq_item.ch) = 'T' then
-                        if nucl_seq.form = RNA then WriteErr(MSG_BAD_TYPE, '')
+                    else if seq_item.ch = 'T' then
+                        if nucl_seq.form = RNA then WriteErr(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
                         else nucl_seq.form := DNA;
-                    if UpCase(seq_item.ch) = 'T' then
+                    if seq_item.ch = 'T' then
                         seq_item.ch := 'U'
                 end;
             end;
-            inc(k);
-            if k = Length(nucl_seqs) then
-                SetLength(nucl_seqs, k * 2);
-            nucl_seqs[k] := nucl_seq;
-            Debug('Нуклеотидная последовательность #' + IntToStr(k) + ': ')
+            if i = Length(nucl_seqs) then
+                SetLength(nucl_seqs, i * 2);
+            nucl_seqs[i] := nucl_seq;
+            inc(i);
         end;
         SetLength(nucl_seqs, i);
     end;
 
-    procedure Main(amino_path: string; nucl_path: string); { обработка входных данных }
+    procedure Main(); { обработка входных данных }
     begin
         Debug('Подготовка к обработке аминокислотной последовательности...');
         Prepare_file(amino_input, amino_path);

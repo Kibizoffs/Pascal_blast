@@ -12,7 +12,6 @@ const
 
 var
     ini:                   TIniFile;
-    amino_path, nucl_path: string;
     i:                     integer;
 
 begin
@@ -44,5 +43,5 @@ begin
     if (code <> 0) or (flag = false) then
         WriteErr(MSG_BAD_MODE, '');
         
-    Main(amino_path, nucl_path) { процедура из parser.pas } 
+    Main() { процедура из parser.pas } 
 end.

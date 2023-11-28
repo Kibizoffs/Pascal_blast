@@ -1,8 +1,9 @@
 >seq sosoy_r
-AAGCAA
-AAUU G
+AAGCAAGC
+AAuU G
+GC
 
   AUU
   
 GAUCUUUCGAUAAAAUUU
-tT
+aA

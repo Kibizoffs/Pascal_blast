@@ -49,8 +49,8 @@ implementation
     begin
         seq_item.ch := #0;
         seq_item.ord := 0;
-        seq_item.col := 1;
-        seq_item.row := 0;
+        seq_item.row := 1;
+        seq_item.col := 0;
     end;
 
     function If_EOLN(): boolean;
@@ -79,24 +79,25 @@ implementation
     begin
         Read(input, seq_item.ch);
         while not EOF(input) do
-        begin
+        begin   
             if If_EOLN() then
             begin
-                inc(seq_item.col);
-                seq_item.row := 0;
-                ReadLn(input, seq_item.ch);
+                inc(seq_item.row);
+                seq_item.col := 0;
+                if EOF(input) then break;
+                Read(input, seq_item.ch);
             end
             else
             begin
                 if If_whitespace() then
                 begin
-                    inc(seq_item.row);
+                    inc(seq_item.col);
                     Read(input, seq_item.ch);
                 end
                 else 
                 begin
                     inc(seq_item.ord);
-                    inc(seq_item.row);
+                    inc(seq_item.col);
                     break;
                 end;
             end;
