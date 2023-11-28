@@ -12,22 +12,18 @@ const
 var
     ini:                   TIniFile;
     amino_path, nucl_path: string;
+    i:                     integer;
 
 begin
     ClrScr();
     NormVideo();
 
     debug := false;
-    finish := false;
     ini := TIniFile.Create('config.ini');
     if ini.ReadString('settings', 'debug', '0') = '1' then
     begin
         debug := true;
         WriteLn(ParamStr(0), ' был запущен...')
-    end;
-    if ini.ReadString('settings', 'finish', '0') = '1' then
-    begin
-        finish := true
     end;
 
     if ParamCount > 3 then
