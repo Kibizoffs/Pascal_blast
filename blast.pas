@@ -2,6 +2,7 @@ Program Blast;
 
 uses
     Crt, IniFiles, { Стандартные модули }
+    Debugger,      { Модуль разработчика }
     Global,        { Глобальные переменные }
     Handler,       { Обработка ошибок }
     Parser;        { Обработка ввода }
@@ -18,11 +19,11 @@ begin
     ClrScr();
     NormVideo();
 
-    debug := false;
+    debug_mode := false;
     ini := TIniFile.Create('config.ini');
     if ini.ReadString('settings', 'debug', '0') = '1' then
     begin
-        debug := true;
+        debug_mode := true;
         WriteLn(ParamStr(0), ' был запущен...')
     end;
 
@@ -43,5 +44,5 @@ begin
     if (code <> 0) or (flag = false) then
         WriteErr(MSG_BAD_MODE, '');
         
-    Parse_input(amino_path, nucl_path) { процедура из parser.pas } 
+    Main(amino_path, nucl_path) { процедура из parser.pas } 
 end.

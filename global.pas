@@ -2,8 +2,8 @@ unit Global;
 
 interface
     var
-        debug, flag: boolean;
-        mode, code:  byte;
+        flag:       boolean;
+        mode, code: byte;
 
 implementation
 

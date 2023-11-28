@@ -3,6 +3,7 @@ unit Utils;
 interface
     uses
         SysUtils, { стандартные модули }
+        Debugger, { Модуль разработчика }
         Global,   { глобальные переменные }
         Handler,  { обработка ошибок }
         Parser;   { обработка ввода и нахождение последовательностей }
@@ -99,6 +100,7 @@ implementation
                     break;
                 end;
             end;
+            break
         end;
     end;
 end.
