@@ -11,7 +11,7 @@
         &nbsp;o-O&nbsp;                     </br>
     </td>
     <td>
-        <h1>BLAST</h1>
+        <h1><a href='https://github.com/Kibizoffs/pascal-blast'>BLAST</a></h1>
         <h5>Инструмент биоинформатики для сравненения и анализа</br>белковых или нуклеотидных последовательностей</h5>
     </td>
 </tr>

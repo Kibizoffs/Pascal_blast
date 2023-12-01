@@ -1,0 +1,10 @@
+*.swp
+*.ppu
+*.o
+*.exe
+*.log
+
+**/.git/
+**/.vscode/
+
+task-2/blast

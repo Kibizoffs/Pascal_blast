@@ -23,5 +23,4 @@ implementation
             NormVideo();
         end;
     end;
-
 end.

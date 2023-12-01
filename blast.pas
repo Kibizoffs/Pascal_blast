@@ -13,7 +13,7 @@ const
 
 var
     ini: TIniFile;
-    i:   integer;
+    i:   byte;
 
 begin
     { Подготовка терминала }
