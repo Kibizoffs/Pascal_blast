@@ -108,10 +108,8 @@ implementation
             else if Is_inside(SEQ_AMIGO_LEGAL_CHARS) then
             begin
                 if (i + 1) = Length(amino_seq.ctx) then
-                begin
-                    amino_seq.size := (i + 1) * 2;
                     SetLength(amino_seq.ctx, amino_seq.size);
-                end;
+                amino_seq.size := i + 1;
                 amino_seq.ctx[i] := seq_item;
                 inc(i);
             end
@@ -123,6 +121,7 @@ implementation
     procedure Search_sub_seqs(); { Найти подпоследовательности }
     var
         i, j, j_temp, k,
+        m_ord, m_row, m_col,
         n_mod_0, n_mod_1, n_mod_2, n: longword;
         codon_str:                    string;
         nothing_found, 
@@ -140,7 +139,6 @@ implementation
         for i := 0 to (nucl.size - 1) do
         begin
             j := 0;
-            codon_str := '';
             start_mod_0 := false;
             start_mod_1 := false;
             start_mod_2 := false;
@@ -150,65 +148,67 @@ implementation
 
             while j < (nucl.seqs[i].size - 3) do
             begin
-                for j_temp := j to (j + 2) do
-                    codon_str := codon_str + nucl.seqs[i].ctx[j_temp].ch;
                 j_temp := j;
-                //Debug(IntToStr(j) + ' ' + codon_str + ' ' + IntToStr(j_temp) + ' ' + IntToStr(n) + '/' + IntToStr(amino_seq.size));
 
-                case (j_temp mod 3) of
-                    0:
-                    begin
-                        start := start_mod_0;
-                        n := n_mod_0;
-                    end;
-                    1:
-                    begin
-                        start := start_mod_1;
-                        n := n_mod_1;
-                    end;
-                    2:
-                    begin
-                        start := start_mod_2;
-                        n := n_mod_2;
-                    end;
-                end;
-
-                if (start = true) or (codon_str = 'AUG') then
+                while j_temp < (nucl.seqs[i].size - 3) do
                 begin
-                    case codon_str of
-                        'UAA', 'UGA', 'UAG': { стоп кодоны }
+                    codon_str := '';
+                    for k := j_temp to (j_temp + 2) do
+                        codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
+                    //Debug(IntToStr(j) + ' ' + codon_str + ' ' + IntToStr(j_temp) + ' ' + IntToStr(n) + '/' + IntToStr(amino_seq.size));
+
+                    case (j_temp mod 3) of
+                        0:
+                        begin
+                            start := start_mod_0;
+                            n := n_mod_0;
+                        end;
+                        1:
+                        begin
+                            start := start_mod_1;
+                            n := n_mod_1;
+                        end;
+                        2:
+                        begin
+                            start := start_mod_2;
+                            n := n_mod_2;
+                        end;
+                    end;
+
+                    if (start = true) or (codon_str = 'AUG') then
+                    begin
+                        case codon_str of
+                            'UAA', 'UGA', 'UAG': { стоп кодоны }
                             begin
-                                if (start = false) then
-                                begin
-                                    case (j_temp mod 3) of
-                                        0: start_mod_0 := false;
-                                        1: start_mod_1 := false;
-                                        2: start_mod_2 := false;
-                                    end;
+                                case (j_temp mod 3) of
+                                    0: start_mod_0 := false;
+                                    1: start_mod_1 := false;
+                                    2: start_mod_2 := false;
                                 end;
                                 if n >= amino_seq.size then
                                 begin
                                     nothing_found := false;
                                     WriteLn();
                                     WriteLn(amino_seq.name_);
-                                    WriteLn(nucl.seqs[i].ctx[j].ord, ', ', nucl.seqs[i].ctx[j_temp + 2].ord);
-                                    WriteLn('(', nucl.seqs[i].ctx[j].row, ',', nucl.seqs[i].ctx[j].col, ') - (', nucl.seqs[i].ctx[j_temp + 2].row, ',', nucl.seqs[i].ctx[j].col, ')');
-                                    for k := j_temp to (j_temp + 2) do
+                                    WriteLn(nucl.seqs[i].ctx[j].ord, ', ', m_ord);
+                                    WriteLn('(', nucl.seqs[i].ctx[j].row, ',', nucl.seqs[i].ctx[j].col, ') - (', m_row, ',', m_col, ')');
+                                    for k := j to (j_temp + 2) do
                                         Write(nucl.seqs[i].ctx[k].ch);
                                     WriteLn();
+                                    break;
                                 end;
                             end;
-                        'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
-                        'UGU', 'UGC':                             amino_ch := 'C';
-                        'GAU', 'GAC':                             amino_ch := 'D';
-                        'GAA', 'GAG':                             amino_ch := 'E';
-                        'UUU', 'UUC':                             amino_ch := 'F';
-                        'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
-                        'CAU', 'CAC':                             amino_ch := 'H';
-                        'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
-                        'AAA', 'AAG':                             amino_ch := 'K';
-                        'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
-                        'AUG': { старт кодон }
+                            'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
+                            'UGU', 'UGC':                             amino_ch := 'C';
+                            'GAU', 'GAC':                             amino_ch := 'D';
+                            'GAA', 'GAG':                             amino_ch := 'E';
+                            'UUU', 'UUC':                             amino_ch := 'F';
+                            'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
+                            'CAU', 'CAC':                             amino_ch := 'H';
+                            'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
+                            'AAA', 'AAG':                             amino_ch := 'K';
+                            'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
+                            'AUG': { старт кодон }
                             begin
                                 if (start = false) then
                                 begin
@@ -219,32 +219,43 @@ implementation
                                     end;
                                     amino_ch := 'M';
                                 end;
-                            end;                                        
-                        'AAU', 'AAC':                             amino_ch := 'N';
-                        'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
-                        'CAA', 'CAG':                             amino_ch := 'Q';
-                        'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
-                        'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
-                        'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
-                        'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
-                        'UGG':                                    amino_ch := 'W';
-                        'UAU', 'UAC':                             amino_ch := 'Y';
-                    end;
-                    Debug(amino_ch + ' ' + amino_seq.ctx[n].ch);
-                    Debug(inttostr(n) + ' ' + inttostr(amino_seq.size) + ' C1: ' + amino_ch + ' C2: ' + amino_seq.ctx[n].ch);
-                    if n < amino_seq.size then
-                    begin
-                        if amino_ch = amino_seq.ctx[n].ch then inc(n)
-                        else n := 0;
-                        case (j_temp mod 3) of
-                            0: n_mod_0 := n;
-                            1: n_mod_1 := n;
-                            2: n_mod_2 := n;
+                            end;
+                            'AAU', 'AAC':                             amino_ch := 'N';
+                            'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
+                            'CAA', 'CAG':                             amino_ch := 'Q';
+                            'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
+                            'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
+                            'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
+                            'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
+                            'UGG':                                    amino_ch := 'W';
+                            'UAU', 'UAC':                             amino_ch := 'Y';
                         end;
-                    end;
-                    j_temp := j_temp + 3;
-                end
-                else inc(j);
+                        if n < amino_seq.size then
+                        begin
+                            if amino_ch = amino_seq.ctx[n].ch then
+                            begin
+                                inc(n);
+                                if n = amino_seq.size then
+                                begin
+                                    m_ord := nucl.seqs[i].ctx[j_temp].ord;
+                                    m_row := nucl.seqs[i].ctx[j_temp].row;
+                                    m_col := nucl.seqs[i].ctx[j_temp].col;
+                                end;
+                            end
+                            else n := 0;
+                            case (j_temp mod 3) of
+                                0: n_mod_0 := n;
+                                1: n_mod_1 := n;
+                                2: n_mod_2 := n;
+                            end;
+                        end;
+                        Debug(codon_str + ' ' + inttostr(j) + ' ' + inttostr(n) + '/' + inttostr(amino_seq.size));
+                        j_temp := j_temp + 3;
+                    end
+                    else break;
+                end;
+
+                inc(j);
             end;
         end;
     end;
