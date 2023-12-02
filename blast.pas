@@ -12,8 +12,9 @@ const
     modes: array[1..2] of Byte = (1, 3);
 
 var
-    ini: TIniFile;
-    i:   byte;
+    ini:  TIniFile;
+    flag: boolean;
+    i:    byte;
 
 begin
     { Подготовка терминала }
