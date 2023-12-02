@@ -1,12 +1,11 @@
-unit Utils;
+unit Utils; { дополнительное }
 
 interface
     uses
-        SysUtils, { Стандартное }
-        Debugger, { Разработка }
-        Global,   { Глобальное }
-        Handler,  { Обработка ошибок }
-        Parser;   { Обработка ввода и нахождение последовательностей }
+        SysUtils, { стандартное }
+        Global,   { глобальное }
+        Output,   { отладка, вывод ошибок и ответов }
+        Parser;   { обработка ввода и нахождение последовательностей }
 
     procedure Prepare_output_file(var output: Text; const file_path: string);
 
@@ -15,7 +14,6 @@ interface
     function Current_time(): string;
 
     function Is_inside(const str: string): boolean;
-    function Is_inside(const arr: array of string): boolean;
 
     procedure Restore_default_seq_item();
 
@@ -27,6 +25,7 @@ interface
 
 
 implementation
+    { подготовиться к выводу }
     procedure Prepare_output_file(var output: Text; const file_path: string);
     begin
         if not(FileExists(file_path)) then
@@ -35,6 +34,7 @@ implementation
         Rewrite(output);
     end;
 
+    { подготовиться к вводу }
     procedure Prepare_input_file(var input: Text; const file_path: string);
     begin
         if not(FileExists(file_path)) then
@@ -43,11 +43,13 @@ implementation
         Reset(input);
     end;
 
+    { получить текущее время }
     function Current_time(): string;
     begin
         Current_time := FormatDateTime('hh:nn:ss.zzz', Now);
     end;
 
+    { проверить, есть ли элемент внутри строки }
     function Is_inside(const str: string): boolean;
     var
         i: integer;
@@ -63,21 +65,7 @@ implementation
         end;
     end;
 
-    function Is_inside(const arr: array of string): boolean;
-    var
-        i: integer;
-    begin
-        Is_inside := false;
-        for i := 1 to Length(arr) do
-        begin
-            if seq_item.ch = arr[i] then
-            begin
-                Is_inside := true;
-                break;
-            end;
-        end;
-    end;
-
+    { инициализировать исходные значения у символа }
     procedure Restore_default_seq_item();
     begin
         seq_item.ch := #0;
@@ -86,11 +74,13 @@ implementation
         seq_item.col := 0;
     end;
 
+    { если ввод - новая строка }
     function If_EOLN(): boolean;
     begin
         If_EOLN := seq_item.ch = #10;
     end;
 
+    { если ввод - пробельный символ }
     function If_whitespace(): boolean;
     const
         WhiteSpaces: array[1..3] of char = (#9, #13, #32);
@@ -108,6 +98,7 @@ implementation
         end;
     end;
 
+    { обработать символ из ввода }
     procedure Read_parse_char(var input: text);
     begin
         Read(input, seq_item.ch);

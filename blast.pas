@@ -1,11 +1,10 @@
 Program Blast;
 
 uses
-    Crt, IniFiles, { Стандартное модули }
-    Debugger,      { Отладка }
-    Global,        { Глобальное }
-    Handler,       { Обработка ошибок }
-    Parser,        { Обработка ввода }
+    Crt, IniFiles, { стандартное }
+    Global,        { глобальное }
+    Output,        { отладка, вывод ошибок и ответов }
+    Parser,        { обработка ввода, основной алгоритм}
     Utils;         { дополнительное }
 
 const

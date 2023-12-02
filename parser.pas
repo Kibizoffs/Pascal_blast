@@ -2,6 +2,7 @@ unit Parser;
 
 interface
     type    
+        { запись символа }
         seq_item_r = record
             ch:  char;
             ord: longword;
@@ -16,31 +17,36 @@ interface
 
 implementation
     uses
-        SysUtils, { Стандартное }
-        Debugger, { Разработка }
-        Global,   { Глобальное }
-        Handler,  { Обработка ошибок }
-        Utils;    { Дополнительное }
+        SysUtils, { стандартное }
+        Global,   { глобальное }
+        Output,   { отладка, вывод ошибок и ответов }
+        Utils;    { дополнительное }
 
     type
-        seq_type = (AMINO, DNA, RNA, UNKNOWN);
-        seq_r = record
+        seq_type = (AMINO, DNA, RNA, UNKNOWN); { типы последовательностей }
+        seq_r = record { запись последовательности }
             type_: seq_type; { 'type' - стандартное слово }
             name_: string; { 'name' - стандартное слово }
             size:  qword;
             ctx:   array of seq_item_r;
         end;
-        seqs_r = record
+        seqs_r = record { запись последовательностей }
             size: qword;
             seqs: array of seq_r;
         end;
+        mod_3_r = record { запись триплета последовательности }
+            start: boolean;
+            n:     longword;
+        end;
+        link_mod_3_r = ^mod_3_r; { ссылка на запись триплета последовательности }
 
     var
         amino_input, nucl_input: text;
         amino_seq:               seq_r;
         nucl:                    seqs_r;
 
-    function Seq_name(var input: Text): string; { Получить имя последовательности }
+    { получить имя последовательности }
+    function Seq_name(var input: Text): string;
     const
         SEQ_NAME_PUNCTUATION: string = '!''"(),-.:;[]_{}';
     begin
@@ -76,7 +82,8 @@ implementation
         seq_item.ord := 0; { ord не зависит от названий последовательностей }
     end;
 
-    procedure Read_amino(); { Получить аминокислотную последовательность }
+    { получить аминокислотную последовательность }
+    procedure Read_amino();
     const 
         SEQ_AMIGO_LEGAL_CHARS = 'ACDEFGHIKLMNPQRSTVWY';
     var
@@ -118,16 +125,111 @@ implementation
         end;
     end;
 
-    procedure Search_sub_seqs(); { Найти подпоследовательности }
+    { получить ссылку на нужный триплет последовательности }
+    function Mod_link(j_temp: longword; var mod_0, mod_1, mod_2: mod_3_r): link_mod_3_r;
+    begin
+        case (j_temp mod 3) of
+            0: mod_link := @mod_0;
+            1: mod_link := @mod_1;
+            2: mod_link := @mod_2;
+        end;
+    end;
+
+    { искать подпоследовательности в одну сторону }
+    procedure One_way_search();
     var
-        i, j, j_temp, k,
-        m_ord, m_row, m_col,
-        n_mod_0, n_mod_1, n_mod_2, n: longword;
-        codon_str:                    string;
-        nothing_found, 
-        start_mod_0, start_mod_1,
-        start_mod_2, start:           boolean;
-        amino_ch:                     char;
+        j, j_temp, k: longword;
+        mod_3:        link_mod_3_r;
+        codon_str:    string;
+        amino_ch:     char;
+    begin
+        while j_temp < (nucl.seqs[i].size - 3) do
+        begin
+            codon_str := '';
+            for k := j_temp to (j_temp + 2) do
+                codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
+
+            mod_3 := mod_link(j_temp, mod_0, mod_1, mod_2);
+
+            if (mod_3^.start = true) or (codon_str = 'AUG') then
+            begin
+                case codon_str of
+                    'UAA', 'UGA', 'UAG': { стоп кодоны }
+                    begin
+                        mod_3^.start := false;
+
+                        if mod_3^.n >= amino_seq.size then
+                        begin
+                            nothing_found := false;
+                            WriteLn();
+                            WriteLn(amino_seq.name_);
+                            WriteLn(nucl.seqs[i].ctx[j].ord, ', ', m.ord);
+                            WriteLn('(', nucl.seqs[i].ctx[j].row, ',', nucl.seqs[i].ctx[j].col, ') - (', m.row, ',', m.col, ')');
+                            for k := j to (j_temp + 2) do
+                                Write(nucl.seqs[i].ctx[k].ch);
+                            WriteLn();
+                            break;
+                        end;
+                    end;
+                    'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
+                    'UGU', 'UGC':                             amino_ch := 'C';
+                    'GAU', 'GAC':                             amino_ch := 'D';
+                    'GAA', 'GAG':                             amino_ch := 'E';
+                    'UUU', 'UUC':                             amino_ch := 'F';
+                    'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
+                    'CAU', 'CAC':                             amino_ch := 'H';
+                    'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
+                    'AAA', 'AAG':                             amino_ch := 'K';
+                    'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
+                    'AUG': { старт кодон }
+                    begin
+                        if (mod_3^.start = false) then
+                        begin
+                            mod_3^.start := true;
+                            amino_ch := 'M';
+                        end;
+                    end;
+                    'AAU', 'AAC':                             amino_ch := 'N';
+                    'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
+                    'CAA', 'CAG':                             amino_ch := 'Q';
+                    'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
+                    'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
+                    'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
+                    'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
+                    'UGG':                                    amino_ch := 'W';
+                    'UAU', 'UAC':                             amino_ch := 'Y';
+                end;
+
+                if mod_3^.n < amino_seq.size then
+                begin
+                    if (amino_ch = amino_seq.ctx[mod_3^.n].ch) or
+                        (mode = 3) and (amino_seq.ctx[mod_3^.n].ch = '-') then
+                    begin
+                        inc(mod_3^.n);
+                        if mod_3^.n = amino_seq.size then
+                        begin
+                            m.ord := nucl.seqs[i].ctx[j_temp].ord;
+                            m.row := nucl.seqs[i].ctx[j_temp].row;
+                            m.col := nucl.seqs[i].ctx[j_temp].col;
+                        end;
+                    end
+                    else mod_3^.n := 0
+                end;
+
+                j_temp := j_temp + 3;
+                Debug(codon_str + ' ' + inttostr(j) + ' ' + inttostr(mod_3^.n) + '/' + inttostr(amino_seq.size));
+            end
+            else break;
+        end;
+    end;
+
+    { найти подпоследовательности }
+    procedure Search_sub_seqs();
+    var
+        nothing_found:       boolean;
+        i:                   longword;
+        m:                   seq_item_r;
+        mod_0, mod_1, mod_2: mod_3_r; 
     begin
         nothing_found := true;
 
@@ -139,128 +241,22 @@ implementation
         for i := 0 to (nucl.size - 1) do
         begin
             j := 0;
-            start_mod_0 := false;
-            start_mod_1 := false;
-            start_mod_2 := false;
-            n_mod_0 := 0;
-            n_mod_1 := 0;
-            n_mod_2 := 0;
-
-            while j < (nucl.seqs[i].size - 3) do
-            begin
-                j_temp := j;
-
-                while j_temp < (nucl.seqs[i].size - 3) do
-                begin
-                    codon_str := '';
-                    for k := j_temp to (j_temp + 2) do
-                        codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
-                    //Debug(IntToStr(j) + ' ' + codon_str + ' ' + IntToStr(j_temp) + ' ' + IntToStr(n) + '/' + IntToStr(amino_seq.size));
-
-                    case (j_temp mod 3) of
-                        0:
-                        begin
-                            start := start_mod_0;
-                            n := n_mod_0;
-                        end;
-                        1:
-                        begin
-                            start := start_mod_1;
-                            n := n_mod_1;
-                        end;
-                        2:
-                        begin
-                            start := start_mod_2;
-                            n := n_mod_2;
-                        end;
-                    end;
-
-                    if (start = true) or (codon_str = 'AUG') then
-                    begin
-                        case codon_str of
-                            'UAA', 'UGA', 'UAG': { стоп кодоны }
-                            begin
-                                case (j_temp mod 3) of
-                                    0: start_mod_0 := false;
-                                    1: start_mod_1 := false;
-                                    2: start_mod_2 := false;
-                                end;
-                                if n >= amino_seq.size then
-                                begin
-                                    nothing_found := false;
-                                    WriteLn();
-                                    WriteLn(amino_seq.name_);
-                                    WriteLn(nucl.seqs[i].ctx[j].ord, ', ', m_ord);
-                                    WriteLn('(', nucl.seqs[i].ctx[j].row, ',', nucl.seqs[i].ctx[j].col, ') - (', m_row, ',', m_col, ')');
-                                    for k := j to (j_temp + 2) do
-                                        Write(nucl.seqs[i].ctx[k].ch);
-                                    WriteLn();
-                                    break;
-                                end;
-                            end;
-                            'GCU', 'GCC', 'GCA', 'GCG':               amino_ch := 'A';
-                            'UGU', 'UGC':                             amino_ch := 'C';
-                            'GAU', 'GAC':                             amino_ch := 'D';
-                            'GAA', 'GAG':                             amino_ch := 'E';
-                            'UUU', 'UUC':                             amino_ch := 'F';
-                            'GGU', 'GGC', 'GGA', 'GGG':               amino_ch := 'G';
-                            'CAU', 'CAC':                             amino_ch := 'H';
-                            'AUU', 'AUC', 'AUA':                      amino_ch := 'I';
-                            'AAA', 'AAG':                             amino_ch := 'K';
-                            'UUA', 'UUG', 'CUU', 'CUC', 'CUA', 'CUG': amino_ch := 'L';
-                            'AUG': { старт кодон }
-                            begin
-                                if (start = false) then
-                                begin
-                                    case (j_temp mod 3) of
-                                        0: start_mod_0 := true;
-                                        1: start_mod_1 := true;
-                                        2: start_mod_2 := true;
-                                    end;
-                                    amino_ch := 'M';
-                                end;
-                            end;
-                            'AAU', 'AAC':                             amino_ch := 'N';
-                            'CCU', 'CCC', 'CCA', 'CCG':               amino_ch := 'P';
-                            'CAA', 'CAG':                             amino_ch := 'Q';
-                            'CGU', 'CGC', 'CGA', 'CGG', 'AGA', 'AGG': amino_ch := 'R';
-                            'UCU', 'UCC', 'UCA', 'UCG', 'AGU', 'AGC': amino_ch := 'S';
-                            'ACU', 'ACC', 'ACA', 'ACG':               amino_ch := 'T';
-                            'GUU', 'GUC', 'GUA', 'GUG':               amino_ch := 'V';
-                            'UGG':                                    amino_ch := 'W';
-                            'UAU', 'UAC':                             amino_ch := 'Y';
-                        end;
-                        if n < amino_seq.size then
-                        begin
-                            if amino_ch = amino_seq.ctx[n].ch then
-                            begin
-                                inc(n);
-                                if n = amino_seq.size then
-                                begin
-                                    m_ord := nucl.seqs[i].ctx[j_temp].ord;
-                                    m_row := nucl.seqs[i].ctx[j_temp].row;
-                                    m_col := nucl.seqs[i].ctx[j_temp].col;
-                                end;
-                            end
-                            else n := 0;
-                            case (j_temp mod 3) of
-                                0: n_mod_0 := n;
-                                1: n_mod_1 := n;
-                                2: n_mod_2 := n;
-                            end;
-                        end;
-                        Debug(codon_str + ' ' + inttostr(j) + ' ' + inttostr(n) + '/' + inttostr(amino_seq.size));
-                        j_temp := j_temp + 3;
-                    end
-                    else break;
-                end;
-
-                inc(j);
-            end;
+            m.ord := 0;
+            m.row := 0;
+            m.col := 0;
+            mod_0.n := 0;
+            mod_0.start := false;
+            mod_1.n := 0;
+            mod_1.start := false;
+            mod_2.n := 0;
+            mod_2.start := false;
         end;
+        if nothing_found then 
+            WriteLn('Нет совпадений')
     end;
 
-    procedure Read_nucls(); { Получить нуклеотидные последовательности }
+    { получить нуклеотидные последовательности }
+    procedure Read_nucls()
     const
         SEQ_NUCL_CHARS: string = 'ACGTU';
     var
@@ -323,7 +319,8 @@ implementation
         end;
     end;
 
-    procedure Main(); { Обработка входных данных }
+    { основной ход программы }
+    procedure Main();
     begin
         Debug('Начинаем обрабатывать аминокислотную последовательность...');
         Prepare_input_file(amino_input, amino_path);
