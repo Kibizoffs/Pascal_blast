@@ -20,7 +20,7 @@ begin
     ClrScr();
     NormVideo();
 
-    Prepare_output_file(output, DEBUG_PATH);
+    Prepare_output_file(output_text, DEBUG_PATH);
 
     { INI конфигурация }
     debug_mode := false;
@@ -50,5 +50,5 @@ begin
         WriteErr(MSG_BAD_MODE, '');
         
     Main(); { Процедура из parser.pas }
-    Close(output);
+    Close(output_text);
 end.

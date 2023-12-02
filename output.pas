@@ -24,14 +24,18 @@ implementation
         Global,        { глобальное }
         Utils;         { дополнительное }
 
+    var
+        override_debug_mode: boolean = false;
+
+    { отладка }
     procedure Debug(const msg_in: string);
     var
         msg_out: string;
     begin
         msg_out := Current_time() + ' ' + msg_in;
-        WriteLn(output, msg_out);
+        WriteLn(output_text, msg_out);
 
-        if debug_mode then
+        if debug_mode and not override_debug_mode then
         begin
             TextColor(Magenta);
             WriteLn(msg_out);
@@ -39,9 +43,12 @@ implementation
         end;
     end;
 
+    { вывести ошибку }
     procedure WriteErr(const main_msg: string; const add_msg: string); { вывод ошибки }
     begin
+        override_debug_mode := true;
         Debug(main_msg + add_msg);
+        override_debug_mode := false;
 
         TextColor(red);
         WriteLn(main_msg, add_msg);
@@ -50,9 +57,12 @@ implementation
         Halt(1);
     end;
 
-    procedure WriteAns(const msg); { вывод ошибки }
+    { вывести ответ }
+    procedure WriteAns(const msg: string); { вывод ошибки }
     begin
+        override_debug_mode := true;
         Debug(msg);
+        override_debug_mode := false;
 
         TextColor(green);
         WriteLn(msg);

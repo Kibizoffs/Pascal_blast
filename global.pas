@@ -8,7 +8,7 @@ interface
         debug_mode:            boolean;
         mode, code:            byte;
         amino_path, nucl_path: string;
-        output:                Text;
+        output_text:                Text;
 
 implementation
 

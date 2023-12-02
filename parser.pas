@@ -13,6 +13,7 @@ interface
     var
         seq_item: seq_item_r;
 
+    { основной ход программы }
     procedure Main();
 
 implementation
@@ -44,6 +45,7 @@ implementation
         amino_input, nucl_input: text;
         amino_seq:               seq_r;
         nucl:                    seqs_r;
+        nothing_found:           boolean;
 
     { получить имя последовательности }
     function Seq_name(var input: Text): string;
@@ -126,30 +128,45 @@ implementation
     end;
 
     { получить ссылку на нужный триплет последовательности }
-    function Mod_link(j_temp: longword; var mod_0, mod_1, mod_2: mod_3_r): link_mod_3_r;
+    function Mod_link(temp_j: longword; var mod_0, mod_1, mod_2: mod_3_r): link_mod_3_r;
     begin
-        case (j_temp mod 3) of
+        case (temp_j mod 3) of
             0: mod_link := @mod_0;
             1: mod_link := @mod_1;
             2: mod_link := @mod_2;
         end;
     end;
 
-    { искать подпоследовательности в одну сторону }
-    procedure One_way_search();
+    { получить ссылку на нужный триплет последовательности }
+    procedure One_way_search(i, j: longword; temp_ch: seq_item_r; mod_0, mod_1, mod_2: mod_3_r; reversed: boolean);
     var
-        j, j_temp, k: longword;
-        mod_3:        link_mod_3_r;
-        codon_str:    string;
-        amino_ch:     char;
+        temp_j, k: longword;
+        mod_3:     link_mod_3_r;
+        codon_str: string;
+        amino_ch:  char;
+        flag:      boolean;
     begin
-        while j_temp < (nucl.seqs[i].size - 3) do
+        if not reversed then
+        begin
+            temp_j := j;
+            flag := (temp_j < (nucl.seqs[i].size - 3))
+        end
+        else
+        begin
+            temp_j := nucl.seqs[i].size - 3;
+            flag := (temp_j >= 0)
+        end;
+        while flag do
         begin
             codon_str := '';
-            for k := j_temp to (j_temp + 2) do
-                codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
+            if not reversed then
+                for k := temp_j to (temp_j + 2) do
+                    codon_str := codon_str + nucl.seqs[i].ctx[k].ch
+            else
+                for k := temp_j to (temp_j + 2) do
+                    codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
 
-            mod_3 := mod_link(j_temp, mod_0, mod_1, mod_2);
+            mod_3 := mod_link(temp_j, mod_0, mod_1, mod_2);
 
             if (mod_3^.start = true) or (codon_str = 'AUG') then
             begin
@@ -161,13 +178,19 @@ implementation
                         if mod_3^.n >= amino_seq.size then
                         begin
                             nothing_found := false;
-                            WriteLn();
-                            WriteLn(amino_seq.name_);
-                            WriteLn(nucl.seqs[i].ctx[j].ord, ', ', m.ord);
-                            WriteLn('(', nucl.seqs[i].ctx[j].row, ',', nucl.seqs[i].ctx[j].col, ') - (', m.row, ',', m.col, ')');
-                            for k := j to (j_temp + 2) do
-                                Write(nucl.seqs[i].ctx[k].ch);
-                            WriteLn();
+                            WriteAns(amino_seq.name_);
+                            if not reversed then
+                                WriteAns(IntToStr(nucl.seqs[i].ctx[j].ord) + ', ' + IntToStr(temp_ch.ord))
+                            else
+                                WriteAns('-' + IntToStr(nucl.seqs[i].size - nucl.seqs[i].ctx[j].ord) + ', -' + IntToStr(nucl.seqs[i].size - temp_ch.ord));
+                            WriteAns('(' + IntToStr(nucl.seqs[i].ctx[j].row) + ',' +
+                                IntToStr(nucl.seqs[i].ctx[j].col) + ') - (' +
+                                IntToStr(temp_ch.row) + ',' + IntToStr(temp_ch.col) + ')');
+                            if not reversed then
+                                for k := j to (temp_j + 2) do
+                                    Write(nucl.seqs[i].ctx[k].ch)
+                            else for k := j downto (temp_j - 2) do
+                                    Write(nucl.seqs[i].ctx[k].ch);
                             break;
                         end;
                     end;
@@ -208,27 +231,33 @@ implementation
                         inc(mod_3^.n);
                         if mod_3^.n = amino_seq.size then
                         begin
-                            m.ord := nucl.seqs[i].ctx[j_temp].ord;
-                            m.row := nucl.seqs[i].ctx[j_temp].row;
-                            m.col := nucl.seqs[i].ctx[j_temp].col;
+                            temp_ch.ord := nucl.seqs[i].ctx[temp_j].ord;
+                            temp_ch.row := nucl.seqs[i].ctx[temp_j].row;
+                            temp_ch.col := nucl.seqs[i].ctx[temp_j].col;
                         end;
                     end
                     else mod_3^.n := 0
                 end;
-
-                j_temp := j_temp + 3;
+                if not reversed then
+                begin
+                    temp_j := temp_j + 3;
+                    flag := (temp_j < (nucl.seqs[i].size - 3))
+                end
+                else
+                begin
+                    temp_j := temp_j - 3;
+                    flag := (temp_j >= 0)
+                end;
                 Debug(codon_str + ' ' + inttostr(j) + ' ' + inttostr(mod_3^.n) + '/' + inttostr(amino_seq.size));
             end
             else break;
         end;
     end;
 
-    { найти подпоследовательности }
-    procedure Search_sub_seqs();
+    procedure Search_sub_seqs(); { Найти подпоследовательности }
     var
-        nothing_found:       boolean;
-        i:                   longword;
-        m:                   seq_item_r;
+        i, j:                longword;
+        temp_ch:             seq_item_r;
         mod_0, mod_1, mod_2: mod_3_r; 
     begin
         nothing_found := true;
@@ -241,22 +270,27 @@ implementation
         for i := 0 to (nucl.size - 1) do
         begin
             j := 0;
-            m.ord := 0;
-            m.row := 0;
-            m.col := 0;
+            temp_ch.ch := #0;
+            temp_ch.ord := 0;
+            temp_ch.row := 0;
+            temp_ch.col := 0;
             mod_0.n := 0;
             mod_0.start := false;
             mod_1.n := 0;
             mod_1.start := false;
             mod_2.n := 0;
             mod_2.start := false;
+
+            One_way_search(i, j, temp_ch, mod_0, mod_1, mod_2, false);
+            if nucl.seqs[i].type_ = DNA then
+                One_way_search(i, j, temp_ch, mod_0, mod_1, mod_2, true);
+
+            inc(j);
         end;
-        if nothing_found then 
-            WriteLn('Нет совпадений')
+        if nothing_found then WriteAns('Нет совпадений');
     end;
 
-    { получить нуклеотидные последовательности }
-    procedure Read_nucls()
+    procedure Read_nucls(); { Получить нуклеотидные последовательности }
     const
         SEQ_NUCL_CHARS: string = 'ACGTU';
     var
@@ -319,8 +353,7 @@ implementation
         end;
     end;
 
-    { основной ход программы }
-    procedure Main();
+    procedure Main(); { Обработка входных данных }
     begin
         Debug('Начинаем обрабатывать аминокислотную последовательность...');
         Prepare_input_file(amino_input, amino_path);
