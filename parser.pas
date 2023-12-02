@@ -54,12 +54,12 @@ implementation
     begin
         Seq_name := '';
 
-        if EOF(input) then WriteErr(MSG_UNEXPECTED_EOF, '');
+        if EOF(input) then Write_err(MSG_UNEXPECTED_EOF, '');
         Read_parse_char(input);
         if seq_item.ch = '>' then
             while true do
             begin
-                if EOF(input) then WriteErr(MSG_UNEXPECTED_EOF, '');
+                if EOF(input) then Write_err(MSG_UNEXPECTED_EOF, '');
                 Read(input, seq_item.ch);
 
                 if If_EOLN() then
@@ -74,13 +74,13 @@ implementation
                     Is_inside(SEQ_NAME_PUNCTUATION) or
                     If_whitespace()
                 ) then
-                    WriteErr(MSG_BAD_FASTA_SEQ_NAME, '');
+                    Write_err(MSG_BAD_FASTA_SEQ_NAME, '');
 
                 Seq_name := Seq_name + seq_item.ch;
                 inc(seq_item.col);
             end
         else
-            WriteErr(MSG_BAD_FASTA_FORMAT, '');
+            Write_err(MSG_BAD_FASTA_FORMAT, '');
         seq_item.ord := 0; { ord не зависит от названий последовательностей }
     end;
 
@@ -111,7 +111,7 @@ implementation
             if EOF(amino_input) then
             begin
                 if i = 1 then
-                    WriteErr(MSG_UNEXPECTED_EOF, '')
+                    Write_err(MSG_UNEXPECTED_EOF, '')
                 else break
             end
             else if Is_inside(SEQ_AMIGO_LEGAL_CHARS) then
@@ -123,7 +123,7 @@ implementation
                 inc(i);
             end
             else if not (If_EOLN() or If_whitespace()) then
-                WriteErr(MSG_BAD_AMINO, '');
+                Write_err(MSG_BAD_AMINO, '');
         end;
     end;
 
@@ -163,7 +163,7 @@ implementation
                 for k := temp_j to (temp_j + 2) do
                     codon_str := codon_str + nucl.seqs[i].ctx[k].ch
             else
-                for k := temp_j to (temp_j + 2) do
+                for k := temp_j downto (temp_j - 2) do
                     codon_str := codon_str + nucl.seqs[i].ctx[k].ch;
 
             mod_3 := mod_link(temp_j, mod_0, mod_1, mod_2);
@@ -178,12 +178,12 @@ implementation
                         if mod_3^.n >= amino_seq.size then
                         begin
                             nothing_found := false;
-                            WriteAns(amino_seq.name_);
+                            Write_ans(amino_seq.name_);
                             if not reversed then
-                                WriteAns(IntToStr(nucl.seqs[i].ctx[j].ord) + ', ' + IntToStr(temp_ch.ord))
+                                Write_ans(IntToStr(nucl.seqs[i].ctx[j].ord) + ', ' + IntToStr(temp_ch.ord))
                             else
-                                WriteAns('-' + IntToStr(nucl.seqs[i].size - nucl.seqs[i].ctx[j].ord) + ', -' + IntToStr(nucl.seqs[i].size - temp_ch.ord));
-                            WriteAns('(' + IntToStr(nucl.seqs[i].ctx[j].row) + ',' +
+                                Write_ans('-' + IntToStr(nucl.seqs[i].size - nucl.seqs[i].ctx[j].ord) + ', -' + IntToStr(nucl.seqs[i].size - temp_ch.ord));
+                            Write_ans('(' + IntToStr(nucl.seqs[i].ctx[j].row) + ',' +
                                 IntToStr(nucl.seqs[i].ctx[j].col) + ') - (' +
                                 IntToStr(temp_ch.row) + ',' + IntToStr(temp_ch.col) + ')');
                             if not reversed then
@@ -287,7 +287,7 @@ implementation
 
             inc(j);
         end;
-        if nothing_found then WriteAns('Нет совпадений');
+        if nothing_found then Write_ans('Нет совпадений');
     end;
 
     procedure Read_nucls(); { Получить нуклеотидные последовательности }
@@ -305,7 +305,7 @@ implementation
             if EOF(nucl_input) then
             begin
                 if (i = 0) then
-                    WriteErr(MSG_UNEXPECTED_EOF, nucl_path)
+                    Write_err(MSG_UNEXPECTED_EOF, nucl_path)
                 else break;
             end;
 
@@ -325,13 +325,13 @@ implementation
                 begin
                     seq_item.ch := UpCase(seq_item.ch);
                     if not Is_inside(SEQ_NUCL_CHARS) then
-                        WriteErr(MSG_BAD_nucl, '');
+                        Write_err(MSG_BAD_nucl, '');
                     { Определение типа последовательности }
                     if seq_item.ch = 'U' then
-                        if nucl.seqs[i].type_ = DNA then WriteErr(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
+                        if nucl.seqs[i].type_ = DNA then Write_err(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
                         else nucl.seqs[i].type_ := RNA
                     else if seq_item.ch = 'T' then
-                        if nucl.seqs[i].type_ = RNA then WriteErr(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
+                        if nucl.seqs[i].type_ = RNA then Write_err(MSG_BAD_TYPE, 'Символ (' + IntToStr(seq_item.row) + ',' + IntToStr(seq_item.row) + '): ' + seq_item.ch)
                         else nucl.seqs[i].type_ := DNA;
                     if seq_item.ch = 'T' then
                         seq_item.ch := 'U';

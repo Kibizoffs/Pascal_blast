@@ -16,7 +16,7 @@ var
     i:    byte;
 
 begin
-    { Подготовка терминала }
+    { подготовка терминала }
     ClrScr();
     NormVideo();
 
@@ -31,13 +31,13 @@ begin
         debug(ParamStr(0) + ' был запущен...')
     end;
 
-    { Параметры запуска }
+    { параметры запуска }
     if ParamCount > 3 then
-        WriteErr(MSG_BAD_PARAMS, '');
+        Write_err(MSG_BAD_PARAMS, '');
     { ParamStr(0) равен названию исполняемого файла }
     amino_path := ParamStr(1);
     nucl_path := ParamStr(2);
-    { Проверка корректности режима запуски }
+    { проверка корректности режима запуски }
     Val(ParamStr(3), mode, code);
     flag := false;
     for i := 1 to Length(modes) do
@@ -47,8 +47,8 @@ begin
         break
     end;
     if (code <> 0) or (flag = false) then
-        WriteErr(MSG_BAD_MODE, '');
+        Write_err(MSG_BAD_MODE, '');
         
-    Main(); { Процедура из parser.pas }
+    Main(); { процедура из parser.pas }
     Close(output_text);
 end.

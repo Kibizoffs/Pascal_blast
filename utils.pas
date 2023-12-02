@@ -38,7 +38,7 @@ implementation
     procedure Prepare_input_file(var input: Text; const file_path: string);
     begin
         if not(FileExists(file_path)) then
-            WriteErr(MSG_NO_FILE, file_path);
+            Write_err(MSG_NO_FILE, file_path);
         Assign(input, file_path);
         Reset(input);
     end;

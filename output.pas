@@ -14,9 +14,9 @@ interface
 
     procedure Debug(const msg_in: string); { вывод сообщения отладки }
 
-    procedure WriteErr(const main_msg: string; const add_msg: string); { вывод ошибки }
+    procedure Write_err(const main_msg: string; const add_msg: string); { вывод ошибки }
 
-    procedure WriteAns(const msg: string); { вывод ошибки }
+    procedure Write_ans(const msg: string); { вывод ошибки }
 
 implementation
     uses
@@ -44,7 +44,7 @@ implementation
     end;
 
     { вывести ошибку }
-    procedure WriteErr(const main_msg: string; const add_msg: string); { вывод ошибки }
+    procedure Write_err(const main_msg: string; const add_msg: string);
     begin
         override_debug_mode := true;
         Debug(main_msg + add_msg);
@@ -58,7 +58,7 @@ implementation
     end;
 
     { вывести ответ }
-    procedure WriteAns(const msg: string); { вывод ошибки }
+    procedure Write_ans(const msg: string);
     begin
         override_debug_mode := true;
         Debug(msg);
