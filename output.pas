@@ -12,11 +12,13 @@ interface
         MSG_BAD_AMINO          = 'ERR07: Плохая аминокислотная последовательность. ';
         MSG_BAD_NUCL           = 'ERR08: Плохая нуклеотидная последовательность. ';
 
-    procedure Debug(const msg_in: string); { вывод сообщения отладки }
+    procedure Write_output_file(const msg: string);
 
-    procedure Write_err(const main_msg: string; const add_msg: string); { вывод ошибки }
+    procedure Debug(const msg: string);
 
-    procedure Write_ans(const msg: string); { вывод ошибки }
+    procedure Write_err(const main_msg: string; const add_msg: string);
+
+    procedure Write_ans(const msg: string);
 
 implementation
     uses
@@ -24,21 +26,21 @@ implementation
         Global,        { глобальное }
         Utils;         { дополнительное }
 
-    var
-        override_debug_mode: boolean = false;
+    { вывод в файл }
+    procedure Write_output_file(const msg: string);
+    begin
+        WriteLn(output_text, Current_time() + ' ' + msg);
+    end;
 
     { отладка }
-    procedure Debug(const msg_in: string);
-    var
-        msg_out: string;
+    procedure Debug(const msg: string);
     begin
-        msg_out := Current_time() + ' ' + msg_in;
-        WriteLn(output_text, msg_out);
+        Write_output_file(msg);
 
-        if debug_mode and not override_debug_mode then
+        if debug_mode then
         begin
             TextColor(Magenta);
-            WriteLn(msg_out);
+            WriteLn(msg);
             NormVideo();
         end;
     end;
@@ -46,12 +48,10 @@ implementation
     { вывести ошибку }
     procedure Write_err(const main_msg: string; const add_msg: string);
     begin
-        override_debug_mode := true;
-        Debug(main_msg + add_msg);
-        override_debug_mode := false;
+        Write_output_file(main_msg + add_msg);
 
         TextColor(red);
-        WriteLn(main_msg, add_msg);
+        WriteLn(main_msg + add_msg);
         NormVideo();
 
         Halt(1);
@@ -60,9 +60,7 @@ implementation
     { вывести ответ }
     procedure Write_ans(const msg: string);
     begin
-        override_debug_mode := true;
-        Debug(msg);
-        override_debug_mode := false;
+        Write_output_file(msg);
 
         TextColor(green);
         WriteLn(msg);

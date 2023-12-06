@@ -15,7 +15,7 @@ interface
 
     function Is_inside(const str: string): boolean;
 
-    procedure Restore_default_seq_item();
+    procedure Restore_default_seq_item(var seq_item: seq_item_r);
 
     function If_EOLN(): boolean;
     
@@ -66,7 +66,7 @@ implementation
     end;
 
     { инициализировать исходные значения у символа }
-    procedure Restore_default_seq_item();
+    procedure Restore_default_seq_item(var seq_item: seq_item_r);
     begin
         seq_item.ch := #0;
         seq_item.ord := 0;
@@ -106,21 +106,22 @@ implementation
         begin   
             if If_EOLN() then
             begin
+                letter_in_line_fl := false;
                 inc(seq_item.row);
                 seq_item.col := 0;
-                if EOF(input) then break;
                 Read(input, seq_item.ch);
             end
             else
             begin
                 if If_whitespace() then
                 begin
-                    inc(seq_item.col);
+                    Inc(seq_item.col);
                     Read(input, seq_item.ch);
                 end
                 else 
                 begin
-                    inc(seq_item.ord);
+                    if not (('0' <= seq_item.ch) and (seq_item.ch <= '9') or (seq_item.ch = '>')) then
+                        inc(seq_item.ord);
                     inc(seq_item.col);
                     break;
                 end;

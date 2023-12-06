@@ -1,4 +1,4 @@
-unit Global;
+unit Global; { глобальное }
 
 interface
     const
@@ -8,7 +8,7 @@ interface
         debug_mode:            boolean;
         mode, code:            byte;
         amino_path, nucl_path: string;
-        output_text:                Text;
+        output_text:           Text;
 
 implementation
 
