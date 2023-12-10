@@ -220,6 +220,16 @@ implementation
         if nucl.type_ = DNA then
         begin
             reversed := true;
+
+            for i := (nucl.size - 1) downto 1 do { построение комплиментарной посл }
+            begin
+                case nucl.ctx[i].ch of
+                    'A': nucl.ctx[i].ch := 'U';
+                    'U': nucl.ctx[i].ch := 'A';
+                    'G': nucl.ctx[i].ch := 'C';
+                    'C': nucl.ctx[i].ch := 'G';
+                end;
+            end;
             
             for i := (nucl.size - 1) downto 3 do
             begin
@@ -246,8 +256,10 @@ implementation
                 for j := i to (i + 2) do
                     codon_str := codon_str + nucl.ctx[j].ch
             else
+            begin
                 for j := i downto (i - 2) do
                     codon_str := codon_str + nucl.ctx[j].ch;
+            end;
 
             case codon_str of
                 'UAA', 'UGA', 'UAG':                      amino_ch := '0'; { почти бесполезные стоп-кодоны }
@@ -272,10 +284,7 @@ implementation
                 'UGG':                                    amino_ch := 'W';
                 'UAU', 'UAC':                             amino_ch := 'Y';
             else
-            begin
                 Write_err(MSG_BAD_NUCL, '');
-                writeln(codon_str, ' ', reversed);
-            end
             end;
 
             if (amino_ch = amino_seq.ctx[n].ch) or
@@ -285,25 +294,46 @@ implementation
                 if n = amino_seq.size then
                 begin
                     no_findings := false;
-                    temp_ch.ord := nucl.ctx[i].ord;
-                    temp_ch.row := nucl.ctx[i].row;
-                    temp_ch.col := nucl.ctx[i].col;
 
                     WriteLn();
                     Write_ans(nucl.name_);
                     if not reversed then
-                        Write_ans(IntToStr(nucl.ctx[temp_i].ord) + ', ' + IntToStr(temp_ch.ord))
+                    begin
+                        Write_ans(
+                            IntToStr(nucl.ctx[temp_i].ord) + ', ' +
+                            IntToStr(nucl.ctx[i+2].ord)
+                        );
+                        Write_ans(
+                            '(' + IntToStr(nucl.ctx[temp_i].row) + ',' +
+                            IntToStr(nucl.ctx[temp_i].col) + ') - (' +
+                            IntToStr(nucl.ctx[i+2].row) + ',' +
+                            IntToStr(nucl.ctx[i+2].col) + ')'
+                        );
+                    end
                     else
-                        Write_ans('-' + IntToStr(nucl.size - nucl.ctx[i].ord + 1) + ', -' + IntToStr(nucl.size - temp_ch.ord + 1));
-                    Write_ans('(' + IntToStr(nucl.ctx[temp_i].row) + ',' +
-                        IntToStr(nucl.ctx[temp_i].col) + ') - (' +
-                        IntToStr(temp_ch.row) + ',' + IntToStr(temp_ch.col) + ')');
+                    begin
+                        Write_ans(
+                            '-' + IntToStr(nucl.size - nucl.ctx[temp_i-1].ord) + ', -' +
+                            IntToStr(nucl.size - nucl.ctx[i-3].ord)
+                        );
+                        Write_ans(
+                            '(' + IntToStr(nucl.ctx[temp_i-1].row) + ',' +
+                            IntToStr(nucl.ctx[temp_i-1].col) + ') - (' +
+                            IntToStr(nucl.ctx[i-3].row) + ',' +
+                            IntToStr(nucl.ctx[i-3].col) + ')'
+                        );
+                    end;
                     if not reversed then
-                        for j := temp_i to i do
+                        for j := temp_i to (i+2) do
                             Write(nucl.ctx[j].ch)
                     else
-                        for j := i downto temp_i do
-                            Write(nucl.ctx[j].ch);
+                        for j := temp_i downto (i-2) do
+                            case nucl.ctx[j].ch of
+                                'A': Write('U');
+                                'U': Write('A');
+                                'G': Write('G');
+                                'C': Write('C');
+                            end;
                     WriteLn();
                     WriteLn();
 
