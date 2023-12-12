@@ -1,4 +1,4 @@
-COMPILER_OPTIONS=
+COMPILER_OPTIONS= -gv
 SOURCES=$(wildcard *.pas)
 
 all: blast clean

@@ -85,15 +85,12 @@ implementation
     { получить аминокислотную последовательность }
     procedure Read_amino();
     const 
-        SEQ_AMIGO_LEGAL_CHARS = 'ACDEFGHIKLMNPQRSTVWY';
-    var
-        i: integer;
+        SEQ_AMIGO_LEGAL_CHARS = 'ACDEFGHIKLMNPQRSTVWY-';
     begin
         amino_seq.type_ := AMINO;
         amino_seq.name_ := Seq_name(amino_input);
         amino_seq.size := 1;
         SetLength(amino_seq.ctx, amino_seq.size);
-        i := 0; { индекс текущего символа }
 
         Debug('Получаем аминокислотную последовательность ''' + amino_seq.name_ + '''...');
         while true do
@@ -103,18 +100,19 @@ implementation
             
             if EOF(amino_input) then
             begin
-                if i = 0 then
+                if amino_seq.size = 1 then
                     Write_err(MSG_UNEXPECTED_EOF, '')
                 else break
             end
             else if Is_inside(SEQ_AMIGO_LEGAL_CHARS) then
             begin
-                if i + 1 = Length(amino_seq.ctx) then
-                    SetLength(amino_seq.ctx, amino_seq.size * 2);
-                amino_seq.size := i + 1;
-                
-                amino_seq.ctx[i] := seq_item;
-                inc(i);
+                if not((mode = 1) and (seq_item.ch = '-')) then
+                begin
+                    if amino_seq.size = Length(amino_seq.ctx) then
+                        SetLength(amino_seq.ctx, amino_seq.size * 2);
+                    amino_seq.ctx[amino_seq.size] := seq_item;
+                    inc(amino_seq.size);
+                end
             end
             else if not (If_EOLN() or If_whitespace()) then
                 Write_err(MSG_BAD_AMINO, '');
@@ -287,11 +285,11 @@ implementation
                 Write_err(MSG_BAD_NUCL, '');
             end;
 
-            if (amino_ch = amino_seq.ctx[n].ch) or
-                (amino_seq.ctx[n].ch = '-') and (mode = 3) and (amino_ch <> '0') then
+            if (amino_ch = amino_seq.ctx[n+1].ch) or
+                (amino_seq.ctx[n+1].ch = '-') and (amino_ch <> '0') then
             begin
                 Inc(n);
-                if n = amino_seq.size then
+                if n = amino_seq.size - 1 then
                 begin
                     no_findings := false;
 
