@@ -8,3 +8,6 @@ blast: $(SOURCES)
 
 clean:
 	rm -f *.o *.ppu
+
+distclean: clean
+	rm -f blast

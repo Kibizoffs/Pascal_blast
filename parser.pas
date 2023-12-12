@@ -39,7 +39,7 @@ implementation
     { получить имя последовательности }
     function Seq_name(var input: Text): string;
     const
-        SEQ_NAME_PUNCTUATION: string = '!''"(),-.:;[]_{}/';
+        SEQ_NAME_PUNCTUATION: string = '!''"(),-.:;[]_{}/|\=';
     begin
         Seq_name := '';
 
@@ -323,19 +323,37 @@ implementation
                     end;
                     if not reversed then
                         for j := temp_i to (i+2) do
-                            Write(nucl.ctx[j].ch)
+                        begin
+                            Write(nucl.ctx[j].ch);
+                            if (j <> temp_i) then
+                            begin
+                                if (j - temp_i) mod 60 = 0 then
+                                    WriteLn()
+                                else if (j - temp_i) mod 10 = 0 then
+                                    Write(' ');
+                            end;
+                        end
                     else
+                    begin
                         for j := temp_i downto (i-2) do
+			            begin
                             case nucl.ctx[j].ch of
                                 'A': Write('U');
                                 'U': Write('A');
-                                'G': Write('G');
-                                'C': Write('C');
+                                'G': Write('C');
+                                'C': Write('G');
                             end;
+			                if (temp_i <> j) then 
+                            begin
+                                if (temp_i - j) mod 60 = 0 then
+		                            WriteLn()
+                                else if (temp_i - j) mod 10 = 0 then
+		                            Write(' ');
+			                end;
+                        end;
+                    end;
                     WriteLn();
                     WriteLn();
-
-                    break
                 end;
             end
             else break;
@@ -353,7 +371,6 @@ implementation
         end;
     end;
 
-    { основной ход программы }
     procedure Main();
     begin
         Debug('Начинаем обрабатывать аминокислотную последовательность...');
